@@ -20,8 +20,8 @@ export function AppHeader({
   return (
     <header className="app-header">
       <button className="brand" aria-label="灵枢 AI 首页">
-        <span className="brand-mark"><Sparkles size={17} strokeWidth={2.3} /></span>
-        <span>灵枢 AI</span>
+        <span className="brand-mark"><Sparkles size={14} strokeWidth={2} /></span>
+        <span>灵枢</span>
       </button>
 
       <nav className="mode-switch" aria-label="产品模式">
@@ -39,7 +39,7 @@ export function AppHeader({
 
       <button className="profile-button" aria-label="账户菜单">
         <span className="avatar">张</span>
-        <span className="profile-copy"><b>张明远</b><small>华辰集团</small></span>
+        <span className="profile-copy"><b>张明远</b><small>华辰集团 · 企业版</small></span>
         <ChevronDown size={15} />
       </button>
     </header>

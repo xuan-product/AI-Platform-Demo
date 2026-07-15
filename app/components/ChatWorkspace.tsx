@@ -60,9 +60,7 @@ export function ChatWorkspace() {
       <div className="chat-main">
         <button className="mobile-menu" onClick={() => setSidebarOpen(true)} aria-label="打开历史对话"><Menu size={19} /></button>
         <div className="chat-hero">
-          <div className="eyebrow"><Sparkles size={14} /> 企业智能工作台</div>
-          <h1>你好，张总</h1>
-          <p>我是你的企业 AI 助手，可以帮助你分析问题、处理任务、生成内容。</p>
+          <h1>早上好，张总。<br className="hero-break" />今天想做点<span>什么？</span></h1>
 
           <div className="composer-shell">
             {submitted && (
@@ -80,7 +78,7 @@ export function ChatWorkspace() {
                   submit();
                 }
               }}
-              placeholder="请输入你的问题..."
+              placeholder="向我提问或布置任务，输入 @ 唤起技能或选择智能体"
               aria-label="向企业 AI 助手提问"
             />
             <div className="composer-actions">
@@ -94,14 +92,14 @@ export function ChatWorkspace() {
               </div>
             </div>
           </div>
-          <span className="composer-tip">Enter 发送 · Shift + Enter 换行</span>
+          <span className="composer-tip">按 Enter 发送 · Shift + Enter 换行</span>
 
           <div className="shortcut-grid">
             {shortcuts.map(({ icon: Icon, title, hint, tone }) => (
               <button key={title} className="shortcut-card" onClick={() => setMessage(title)}>
                 <span className={`shortcut-icon ${tone}`}><Icon size={19} /></span>
                 <span><b>{title}</b><small>{hint}</small></span>
-                <ArrowUp className="shortcut-arrow" size={15} />
+                <ArrowUp className="shortcut-arrow" size={14} />
               </button>
             ))}
           </div>
