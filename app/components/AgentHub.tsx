@@ -44,9 +44,9 @@ export function AgentHub() {
     <section className="hub-page">
       <div className="hub-intro">
         <div>
-          <span className="eyebrow"><Sparkles size={14} /> Agent Hub</span>
-          <h1>发现你的 AI 工作伙伴</h1>
-          <p>精选企业智能体，把复杂工作交给更专业的 AI。</p>
+          <span className="eyebrow"><Sparkles size={14} /> AGENT REGISTRY / 02</span>
+          <h1>调用专业执行单元</h1>
+          <p>按工作场景选择智能体，立即进入任务上下文。</p>
         </div>
         <label className="agent-search">
           <Search size={18} />
@@ -81,10 +81,11 @@ export function AgentHub() {
             <button>最近使用</button>
           </div>
           <div className="agent-grid">
-            {filtered.map(({ name, description, category: agentCategory, icon: Icon, tone, uses }) => (
+            {filtered.map(({ name, description, category: agentCategory, icon: Icon, tone, uses }, index) => (
               <article className="agent-card" key={name} onClick={() => setLaunched(name)}>
                 <div className="agent-card-top">
                   <span className={`agent-icon ${tone}`}><Icon size={23} /></span>
+                  <span className="agent-index">A-{String(index + 1).padStart(2, "0")}</span>
                   <button aria-label={`打开${name}`}><ArrowUpRight size={17} /></button>
                 </div>
                 <h3>{name}</h3>

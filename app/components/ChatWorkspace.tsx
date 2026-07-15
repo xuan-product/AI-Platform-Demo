@@ -60,7 +60,9 @@ export function ChatWorkspace() {
       <div className="chat-main">
         <button className="mobile-menu" onClick={() => setSidebarOpen(true)} aria-label="打开历史对话"><Menu size={19} /></button>
         <div className="chat-hero">
-          <h1>早上好，张总。<br className="hero-break" />今天想做点<span>什么？</span></h1>
+          <div className="workspace-kicker"><span>LIVE</span> COMMAND WORKSPACE / 01</div>
+          <h1>今天，<br />运行<span>什么？</span></h1>
+          <p>描述目标，调取企业知识与智能体完成任务。</p>
 
           <div className="composer-shell">
             {submitted && (
@@ -78,7 +80,7 @@ export function ChatWorkspace() {
                   submit();
                 }
               }}
-              placeholder="向我提问或布置任务，输入 @ 唤起技能或选择智能体"
+              placeholder="输入任务指令，或使用 @ 调取智能体..."
               aria-label="向企业 AI 助手提问"
             />
             <div className="composer-actions">

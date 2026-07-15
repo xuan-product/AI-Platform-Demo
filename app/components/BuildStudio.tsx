@@ -35,9 +35,9 @@ export function BuildStudio() {
     <section className="build-page">
       <div className="build-glow" />
       <div className="build-heading">
-        <span className="eyebrow"><Code2 size={14} /> AI BUILD STUDIO</span>
-        <h1>把想法变成 <span>AI 能力</span></h1>
-        <p>无需代码，用自然语言创建智能体、技能和企业应用。</p>
+        <span className="eyebrow"><Code2 size={14} /> BUILD CONSOLE / 03</span>
+        <h1>创建新的<span>执行单元</span></h1>
+        <p>描述职责、数据和交付目标，系统将自动完成能力装配。</p>
       </div>
 
       <div className="build-composer">
