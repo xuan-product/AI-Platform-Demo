@@ -1,22 +1,11 @@
-"use client";
+import type { Metadata } from "next";
+import { AgentPlatform } from "./components/AgentPlatform";
 
-import { useState } from "react";
-import { AppHeader, type ProductMode } from "./components/AppHeader";
-import { ChatWorkspace } from "./components/ChatWorkspace";
-import { AgentHub } from "./components/AgentHub";
-import { BuildStudio } from "./components/BuildStudio";
+export const metadata: Metadata = {
+  title: "澄明 AI｜企业智能体平台",
+  description: "面向企业的 AI 对话、智能体发现与自然语言开发平台。",
+};
 
 export default function Home() {
-  const [mode, setMode] = useState<ProductMode>("chat");
-
-  return (
-    <main className="min-h-screen bg-[var(--canvas)] text-[var(--ink)]">
-      <AppHeader mode={mode} onModeChange={setMode} />
-      <div className="app-stage" key={mode}>
-        {mode === "chat" && <ChatWorkspace />}
-        {mode === "agents" && <AgentHub />}
-        {mode === "build" && <BuildStudio />}
-      </div>
-    </main>
-  );
+  return <AgentPlatform />;
 }
