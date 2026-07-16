@@ -3,155 +3,84 @@
 import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react";
 
 type Mode = "chat" | "agents" | "build";
+type Agent = { id:number; name:string; icon:string; type:string; category:string; description:string; uses:string };
 
-const agentCatalog = [
-  { id: 1, name: "建筑行业助手", icon: "建", type: "平台智能体", category: "行业", description: "基于建筑行业知识库，帮助用户查询规范、分析项目风险。", tone: "green", users: "2.4k" },
-  { id: 2, name: "合同审核助手", icon: "审", type: "平台智能体", category: "法务", description: "自动识别合同风险条款，生成结构化审核报告。", tone: "blue", users: "1.8k" },
-  { id: 3, name: "财务分析助手", icon: "财", type: "平台智能体", category: "财务", description: "分析企业经营数据，生成财务洞察与管理报告。", tone: "amber", users: "1.5k" },
-  { id: 4, name: "项目复盘助手", icon: "复", type: "平台智能体", category: "项目", description: "汇总项目资料，定位关键问题并沉淀复盘结论。", tone: "violet", users: "968" },
-  { id: 5, name: "市场研究助手", icon: "研", type: "第三方智能体", category: "市场", description: "检索公开市场信息，快速形成行业研究摘要。", tone: "rose", users: "756" },
-  { id: 6, name: "内部制度问答", icon: "制", type: "租户智能体", category: "知识", description: "基于企业内部制度文档，回答员工高频业务问题。", tone: "cyan", users: "642" },
+const agents: Agent[] = [
+  { id:1, name:"建筑行业助手", icon:"建", type:"平台智能体", category:"建筑工程", description:"查询行业规范，分析项目进度、质量与安全风险。", uses:"2.4k" },
+  { id:2, name:"合同审核助手", icon:"审", type:"平台智能体", category:"法务合规", description:"识别合同关键条款与潜在风险，生成结构化审核报告。", uses:"1.8k" },
+  { id:3, name:"财务分析助手", icon:"财", type:"平台智能体", category:"财务经营", description:"分析经营数据，定位异常并生成管理层财务洞察。", uses:"1.5k" },
+  { id:4, name:"项目复盘助手", icon:"复", type:"平台智能体", category:"项目管理", description:"汇总项目材料，提炼问题、原因与行动建议。", uses:"968" },
+  { id:5, name:"市场研究助手", icon:"研", type:"第三方智能体", category:"市场研究", description:"检索公开信息并快速形成行业研究与竞品分析。", uses:"756" },
+  { id:6, name:"内部制度问答", icon:"制", type:"租户智能体", category:"企业知识", description:"基于组织制度与知识库回答员工的高频业务问题。", uses:"642" },
 ];
 
-const quickActions = [
-  ["分析业务数据", "上传一份业务数据，帮我识别关键趋势与异常"],
-  ["查询企业知识", "查询企业制度中关于差旅报销的规定"],
-  ["审核合同", "帮我审核一份合同并标记高风险条款"],
-  ["生成报告", "根据项目资料生成一份管理层周报"],
-];
+const suggestions = ["帮我分析这份经营数据", "今天有哪些行业动态", "帮我进行合同风险分析", "生成一份项目周报"];
 
 export function AgentPlatform() {
-  const [mode, setMode] = useState<Mode>("chat");
-  const [mobileMenu, setMobileMenu] = useState(false);
-  const [chatInput, setChatInput] = useState("");
-  const [fileName, setFileName] = useState("");
-  const [listening, setListening] = useState(false);
-  const [sentPrompt, setSentPrompt] = useState("");
-  const [agentType, setAgentType] = useState("平台智能体");
-  const [agentSearch, setAgentSearch] = useState("");
-  const [selectedAgent, setSelectedAgent] = useState<(typeof agentCatalog)[number] | null>(null);
-  const [buildPrompt, setBuildPrompt] = useState("");
-  const [buildState, setBuildState] = useState<"idle" | "running" | "done">("idle");
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [mode,setMode] = useState<Mode>("chat");
+  const [drawer,setDrawer] = useState(false);
+  const [chat,setChat] = useState("");
+  const [file,setFile] = useState("");
+  const [message,setMessage] = useState("");
+  const [source,setSource] = useState("平台智能体");
+  const [search,setSearch] = useState("");
+  const [selected,setSelected] = useState<Agent|null>(null);
+  const [buildPrompt,setBuildPrompt] = useState("");
+  const [buildState,setBuildState] = useState<"idle"|"running"|"done">("idle");
+  const fileInput = useRef<HTMLInputElement>(null);
 
-  const visibleAgents = useMemo(() => agentCatalog.filter((agent) => {
-    const matchesType = agent.type === agentType;
-    const query = agentSearch.trim().toLowerCase();
-    return matchesType && (!query || `${agent.name}${agent.description}${agent.category}`.toLowerCase().includes(query));
-  }), [agentSearch, agentType]);
+  const filtered = useMemo(() => agents.filter(a => a.type === source && (!search.trim() || `${a.name}${a.description}${a.category}`.includes(search.trim()))),[source,search]);
 
-  function switchMode(next: Mode) {
-    setMode(next);
-    setMobileMenu(false);
-    setSelectedAgent(null);
-  }
+  function switchMode(next:Mode){ setMode(next); setDrawer(false); setSelected(null); }
+  function submitChat(e:FormEvent){ e.preventDefault(); if(!chat.trim()) return; setMessage(chat.trim()); setChat(""); }
+  function onFile(e:ChangeEvent<HTMLInputElement>){ setFile(e.target.files?.[0]?.name || ""); }
+  function startBuild(){ if(!buildPrompt.trim()) return; setBuildState("running"); window.setTimeout(()=>setBuildState("done"),1600); }
 
-  function submitChat(event: FormEvent) {
-    event.preventDefault();
-    if (!chatInput.trim()) return;
-    setSentPrompt(chatInput.trim());
-    setChatInput("");
-  }
+  return <div className="desktop-app">
+    <button className="mobile-menu" onClick={()=>setDrawer(true)} aria-label="打开导航">☰</button>
+    <Sidebar mode={mode} drawer={drawer} switchMode={switchMode} source={source} setSource={(v)=>{setSource(v);setSelected(null);}} buildState={buildState} />
+    {drawer && <button className="drawer-scrim" onClick={()=>setDrawer(false)} aria-label="关闭导航" />}
 
-  function chooseFile(event: ChangeEvent<HTMLInputElement>) {
-    setFileName(event.target.files?.[0]?.name ?? "");
-  }
-
-  function startBuild() {
-    if (!buildPrompt.trim()) return;
-    setBuildState("running");
-    window.setTimeout(() => setBuildState("done"), 1800);
-  }
-
-  return (
-    <div className="platform-shell">
-      <header className="topbar">
-        <button className="mobile-trigger" onClick={() => setMobileMenu(!mobileMenu)} aria-label="打开菜单">☰</button>
-        <button className="brand" onClick={() => switchMode("chat")}>
-          <span className="brand-mark">澄</span><span>澄明 AI</span><small>企业智能体平台</small>
-        </button>
-        <nav className="mode-tabs" aria-label="平台模式">
-          <button className={mode === "chat" ? "active" : ""} onClick={() => switchMode("chat")}>对话</button>
-          <button className={mode === "agents" ? "active" : ""} onClick={() => switchMode("agents")}>Agent</button>
-          <button className={mode === "build" ? "active" : ""} onClick={() => switchMode("build")}>开发</button>
-        </nav>
-        <div className="top-actions"><button className="icon-action" aria-label="帮助">?</button><button className="avatar">林</button></div>
-      </header>
-
-      {mode === "chat" && (
-        <div className="chat-layout">
-          <aside className={`chat-sidebar ${mobileMenu ? "open" : ""}`}>
-            <button className="new-chat"><span>＋</span> 新对话 <kbd>⌘ K</kbd></button>
-            <div className="history-heading">历史对话</div>
-            <nav className="history-list">
-              {[["年度经营分析", "刚刚"], ["合同风险分析", "昨天"], ["项目问题分析", "周一"]].map(([name, time], index) => (
-                <button key={name} className={index === 0 ? "selected" : ""}><span>{name}<small>{time}</small></span><b>•••</b></button>
-              ))}
-            </nav>
-            <div className="sidebar-foot"><span className="status-dot" /> 企业知识库已连接<small>所有对话均受组织安全策略保护</small></div>
-          </aside>
-          {mobileMenu && <button className="sidebar-overlay" onClick={() => setMobileMenu(false)} aria-label="关闭菜单" />}
-          <main className="chat-main">
-            {!sentPrompt ? (
-              <section className="chat-home">
-                <div className="eyebrow"><span /> 企业智能工作台</div>
-                <h1>下午好，林先生</h1>
-                <p className="lead">我是你的企业 AI 助手，可以帮助你分析问题、处理任务、生成内容。</p>
-                <ChatComposer value={chatInput} onChange={setChatInput} onSubmit={submitChat} listening={listening} onListen={() => setListening(!listening)} onUpload={() => fileRef.current?.click()} fileName={fileName} />
-                <input ref={fileRef} className="sr-only" type="file" onChange={chooseFile} />
-                <div className="quick-grid">
-                  {quickActions.map(([title, prompt], index) => <button key={title} onClick={() => setChatInput(prompt)}><span className={`quick-icon q${index + 1}`}>{["↗", "⌕", "✓", "▤"][index]}</span><strong>{title}</strong><small>{["洞察趋势与异常", "基于组织知识库", "识别风险条款", "自动整理成文"][index]}</small><b>→</b></button>)}
-                </div>
-              </section>
-            ) : (
-              <section className="conversation-view">
-                <div className="conversation-title"><button onClick={() => setSentPrompt("")}>←</button><span>新的分析任务<small>通用企业模型</small></span></div>
-                <div className="message user-message">{sentPrompt}</div>
-                <div className="assistant-message"><span className="assistant-mark">澄</span><div><strong>澄明 AI</strong><p>好的，我会基于企业知识库与已授权的数据进行分析。为了让结论更准确，你可以继续补充相关文件、时间范围或期望的输出格式。</p><div className="answer-points"><span>1</span>梳理问题与已有材料<br/><span>2</span>识别关键信息和潜在风险<br/><span>3</span>生成结构化结论与下一步建议</div></div></div>
-                <ChatComposer value={chatInput} onChange={setChatInput} onSubmit={submitChat} listening={listening} onListen={() => setListening(!listening)} onUpload={() => fileRef.current?.click()} fileName={fileName} compact />
-              </section>
-            )}
-          </main>
-        </div>
-      )}
-
-      {mode === "agents" && (
-        <main className="agent-page">
-          {selectedAgent ? (
-            <section className="agent-detail">
-              <button className="back-link" onClick={() => setSelectedAgent(null)}>← 返回智能体广场</button>
-              <div className="detail-hero"><span className={`agent-icon ${selectedAgent.tone}`}>{selectedAgent.icon}</span><div><div className="tag-row"><span>{selectedAgent.type}</span><span>{selectedAgent.category}</span></div><h1>{selectedAgent.name}</h1><p>{selectedAgent.description}</p></div><button className="primary-button" onClick={() => { setChatInput(`使用${selectedAgent.name}开始一项新任务`); switchMode("chat"); }}>开始使用</button></div>
-              <div className="detail-columns"><section><h2>它可以为你做什么</h2>{["理解并整理你的业务材料", "结合专业知识完成分析", "输出可直接使用的结构化结果"].map((x, i) => <div className="capability" key={x}><span>0{i + 1}</span><p>{x}<small>按企业数据权限范围安全处理</small></p></div>)}</section><aside><h3>智能体信息</h3><dl><div><dt>提供方</dt><dd>澄明 AI 平台</dd></div><div><dt>使用人数</dt><dd>{selectedAgent.users}</dd></div><div><dt>最近更新</dt><dd>2026-07-12</dd></div></dl></aside></div>
-            </section>
-          ) : (
-            <>
-              <section className="agent-intro"><div><span className="section-label">AGENT HUB</span><h1>找到适合工作的智能体</h1><p>发现经过组织审核的专业 AI 助手，让复杂任务从一个好工具开始。</p></div><label className="agent-search"><span>⌕</span><input value={agentSearch} onChange={(e) => setAgentSearch(e.target.value)} placeholder="搜索智能体" /></label></section>
-              <div className="agent-content">
-                <aside className="agent-categories"><small>智能体来源</small>{["平台智能体", "第三方智能体", "租户智能体"].map((type) => <button className={agentType === type ? "active" : ""} onClick={() => setAgentType(type)} key={type}><span>{type === "平台智能体" ? "◇" : type === "第三方智能体" ? "↗" : "⌂"}</span>{type}<b>{agentCatalog.filter(a => a.type === type).length}</b></button>)}<div className="category-note"><span>✓</span><p>安全可信<small>展示的智能体均经过平台或组织安全审核。</small></p></div></aside>
-                <section className="agent-results"><div className="results-head"><h2>{agentType}</h2><span>{visibleAgents.length} 个智能体</span></div><div className="agent-grid">{visibleAgents.map(agent => <button className="agent-card" key={agent.id} onClick={() => setSelectedAgent(agent)}><div className="agent-card-top"><span className={`agent-icon ${agent.tone}`}>{agent.icon}</span><span className="open-arrow">↗</span></div><h3>{agent.name}</h3><p>{agent.description}</p><footer><span>{agent.category}</span><small>{agent.users} 人使用</small></footer></button>)}</div>{visibleAgents.length === 0 && <div className="empty-state">没有找到匹配的智能体</div>}</section>
-              </div>
-            </>
-          )}
-        </main>
-      )}
-
-      {mode === "build" && (
-        <main className="build-page">
-          <section className="build-heading"><span className="section-label">AI BUILDER</span><h1>用一句话，创建你的企业智能体</h1><p>描述你想解决的问题，AI 将自动完成角色、知识与工具配置。</p></section>
-          <section className="builder-box">
-            <div className="builder-label"><span>✦</span> 描述你的需求</div>
-            <textarea value={buildPrompt} onChange={(e) => { setBuildPrompt(e.target.value); setBuildState("idle"); }} placeholder="请输入你想创建的智能体…\n例如：帮我创建一个销售数据分析助手" />
-            <div className="builder-actions"><div><button>＋ 添加资料</button><button>⌁ 选择数据源</button></div><button className="create-button" disabled={!buildPrompt.trim() || buildState === "running"} onClick={startBuild}>{buildState === "running" ? "正在创建…" : "开始创建"} <span>→</span></button></div>
-          </section>
-          {buildState === "idle" && <div className="build-examples"><span>试试这样描述</span>{["创建一个销售数据分析助手", "创建一个合同风险审查助手", "创建一个项目周报生成器"].map(x => <button onClick={() => setBuildPrompt(x)} key={x}>{x}<b>↗</b></button>)}</div>}
-          {buildState !== "idle" && <section className={`build-progress ${buildState}`}><div className="process-panel"><header><span className="spark">✦</span><div><strong>{buildState === "done" ? "智能体已创建" : "正在理解你的需求"}</strong><small>{buildState === "done" ? "所有配置已经完成" : "这通常只需要几秒钟"}</small></div><b>{buildState === "done" ? "100%" : "72%"}</b></header><div className="progress-bar"><i /></div>{["分析需求与任务目标", "创建智能体角色", "配置企业知识库", "绑定数据分析工具"].map((x, i) => <div className={`process-step ${buildState === "done" || i < 3 ? "complete" : "current"}`} key={x}><span>{buildState === "done" || i < 3 ? "✓" : "·"}</span>{x}<small>{i === 0 ? "已识别销售分析场景" : i === 1 ? "角色与输出规范已生成" : i === 2 ? "已连接授权知识" : "正在配置"}</small></div>)}</div>{buildState === "done" && <div className="build-result"><div className="result-head"><span className="agent-icon green">销</span><div><small>新智能体</small><h2>销售分析助手</h2><p>分析销售数据，识别增长机会并生成经营报告。</p></div></div><div className="ability-list"><small>已配置能力</small>{["查询销售数据", "生成可视化报表", "输出经营分析报告"].map(x => <span key={x}>✓ {x}</span>)}</div><div className="result-actions"><button>继续编辑</button><button className="primary-button">打开智能体 →</button></div></div>}</section>}
-          <footer className="build-foot">你的数据和配置仅在当前组织内可见 · 支持随时调整</footer>
-        </main>
-      )}
-    </div>
-  );
+    <main className="workspace">
+      {mode === "chat" && <ChatPage chat={chat} setChat={setChat} submitChat={submitChat} message={message} setMessage={setMessage} file={file} fileInput={fileInput} onFile={onFile} />}
+      {mode === "agents" && <AgentPage source={source} search={search} setSearch={setSearch} filtered={filtered} selected={selected} setSelected={setSelected} useAgent={(agent)=>{setChat(`使用${agent.name}开始一项新任务`);switchMode("chat");}} />}
+      {mode === "build" && <BuildPage prompt={buildPrompt} setPrompt={(v)=>{setBuildPrompt(v);setBuildState("idle");}} state={buildState} start={startBuild} reset={()=>{setBuildState("idle");setBuildPrompt("");}} />}
+    </main>
+  </div>;
 }
 
-function ChatComposer({ value, onChange, onSubmit, listening, onListen, onUpload, fileName, compact = false }: { value: string; onChange: (value: string) => void; onSubmit: (event: FormEvent) => void; listening: boolean; onListen: () => void; onUpload: () => void; fileName: string; compact?: boolean }) {
-  return <form className={`chat-composer ${compact ? "compact" : ""}`} onSubmit={onSubmit}><textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder="请输入你的问题…" aria-label="对话输入" /><div className="composer-tools"><div><button type="button" className="round-tool" onClick={onUpload} aria-label="上传文件">＋</button><select aria-label="选择模型"><option>通用企业模型</option><option>推理增强模型</option><option>长文本模型</option></select>{fileName && <span className="file-chip">{fileName}</span>}</div><div><button type="button" onClick={onListen} className={`voice-button ${listening ? "active" : ""}`} aria-label="语音输入">{listening ? "停止" : "语音"}</button><button type="submit" className="send-button" disabled={!value.trim()} aria-label="发送">↑</button></div></div></form>;
+function Sidebar({mode,drawer,switchMode,source,setSource,buildState}:{mode:Mode;drawer:boolean;switchMode:(m:Mode)=>void;source:string;setSource:(v:string)=>void;buildState:string}){
+  return <aside className={`work-sidebar ${drawer?"open":""}`}>
+    <div className="side-brand"><span>澄</span><strong>澄明 AI</strong><button aria-label="折叠侧栏">◧</button></div>
+    <nav className="mode-nav">
+      <button className={mode==="chat"?"active":""} onClick={()=>switchMode("chat")}><span>◯</span>对话</button>
+      <button className={mode==="agents"?"active":""} onClick={()=>switchMode("agents")}><span>⌘</span>Agent</button>
+      <button className={mode==="build"?"active":""} onClick={()=>switchMode("build")}><span>‹/›</span>开发</button>
+    </nav>
+    <button className="new-session"><span>⊕</span> 新会话</button>
+
+    {mode==="chat" && <div className="side-content"><small className="side-label">今天</small>{["年度经营分析","合同风险分析","项目问题分析"].map((x,i)=><button className={i===0?"selected":""} key={x}><i />{x}</button>)}<small className="side-label second">以前</small>{["竞品研究与市场机会","管理层周报整理","年度预算复盘"].map(x=><button key={x}>{x}</button>)}</div>}
+    {mode==="agents" && <div className="side-content"><small className="side-label">智能体中心</small>{["平台智能体","第三方智能体","租户智能体"].map((x,i)=><button className={source===x?"selected":""} onClick={()=>setSource(x)} key={x}><span>{["◇","↗","⌂"][i]}</span>{x}</button>)}<small className="side-label second">最近使用</small>{["建筑行业助手","合同审核助手","财务分析助手"].map(x=><button key={x}>{x}</button>)}</div>}
+    {mode==="build" && <div className="side-content"><button className="selected"><span>ϟ</span>技能开发</button><button><span>▣</span>智能体开发</button><button><span>⌘</span>应用开发</button><small className="side-label second">项目 <b>＋</b></small>{["AI 销售分析助手","合同审核工作台","项目周报生成器"].map((x,i)=><button className={buildState!=="idle"&&i===0?"selected":""} key={x}><i className={`project-dot p${i+1}`} />{x}</button>)}</div>}
+    <div className="side-footer"><span className="user-dot">林</span><p>林先生<small>企业工作区</small></p><button>⚙</button></div>
+  </aside>;
+}
+
+function ChatPage({chat,setChat,submitChat,message,setMessage,file,fileInput,onFile}:{chat:string;setChat:(v:string)=>void;submitChat:(e:FormEvent)=>void;message:string;setMessage:(v:string)=>void;file:string;fileInput:React.RefObject<HTMLInputElement|null>;onFile:(e:ChangeEvent<HTMLInputElement>)=>void}){
+  if(message) return <section className="conversation-page"><header className="page-bar"><div><strong>新的企业分析任务</strong><small>通用企业模型</small></div><button onClick={()=>setMessage("")}>＋ 新对话</button></header><div className="conversation-body"><div className="bubble user">{message}</div><div className="ai-answer"><span className="ai-dot">澄</span><div><strong>澄明 AI</strong><p>好的，我会结合企业知识与已授权的数据进行分析。你可以继续补充相关文件、时间范围或期望的输出格式。</p><ol><li>梳理问题与现有材料</li><li>识别关键信息及潜在风险</li><li>输出结构化结论与行动建议</li></ol></div></div></div><PromptBox value={chat} setValue={setChat} onSubmit={submitChat} onUpload={()=>fileInput.current?.click()} file={file} compact /></section>;
+  return <section className="home-page dotted"><div className="home-center"><p className="hero-kicker">企业 AI 工作台</p><h1 className="greeting">下午好，林先生</h1><p className="hero-copy">我是你的企业 AI 助手，可以帮助你分析问题、处理任务、生成内容。</p><PromptBox value={chat} setValue={setChat} onSubmit={submitChat} onUpload={()=>fileInput.current?.click()} file={file} /><input ref={fileInput} className="sr-only" type="file" onChange={onFile}/><div className="prompt-chips">{suggestions.map(x=><button key={x} onClick={()=>setChat(x)}>{x}</button>)}</div></div></section>;
+}
+
+function PromptBox({value,setValue,onSubmit,onUpload,file,compact=false}:{value:string;setValue:(v:string)=>void;onSubmit:(e:FormEvent)=>void;onUpload:()=>void;file:string;compact?:boolean}){
+  return <form className={`prompt-box ${compact?"compact":""}`} onSubmit={onSubmit}><textarea value={value} onChange={e=>setValue(e.target.value)} placeholder="请输入你的问题…" aria-label="消息输入"/><div className="prompt-tools"><div><button type="button" className="upload-action" onClick={onUpload}>＋ 上传文件</button><select aria-label="选择模型"><option>通用企业模型</option><option>深度推理模型</option><option>长文本模型</option></select>{file&&<span className="file-name">{file}</span>}</div><div><button type="button" className="voice-action">语音输入</button><button className="blue-send" disabled={!value.trim()}>↑</button></div></div></form>;
+}
+
+function AgentPage({source,search,setSearch,filtered,selected,setSelected,useAgent}:{source:string;search:string;setSearch:(v:string)=>void;filtered:Agent[];selected:Agent|null;setSelected:(a:Agent|null)=>void;useAgent:(a:Agent)=>void}){
+  if(selected) return <section className="agent-detail-page"><header className="page-bar"><button className="plain-back" onClick={()=>setSelected(null)}>← 返回智能体</button><div><button>收藏</button><button className="primary-small" onClick={()=>useAgent(selected)}>立即使用</button></div></header><div className="detail-sheet"><div className="detail-title"><span className="agent-glyph">{selected.icon}</span><div><span className="type-tag">{selected.type}</span><h1>{selected.name}</h1><p>{selected.description}</p></div></div><div className="detail-meta"><div><small>分类</small><strong>{selected.category}</strong></div><div><small>累计使用</small><strong>{selected.uses}</strong></div><div><small>安全状态</small><strong className="safe">已审核</strong></div><div><small>更新时间</small><strong>2026.07.12</strong></div></div><section><h2>智能体介绍</h2><p>该智能体融合专业知识库与企业任务流程，支持连续对话、材料理解和结构化输出。所有数据仅在组织授权范围内使用。</p></section><section><h2>核心能力</h2><div className="detail-capabilities">{["理解并整理业务材料","结合专业知识完成分析","输出可直接使用的结果"].map((x,i)=><div key={x}><span>0{i+1}</span><strong>{x}</strong><p>按组织数据权限安全处理</p></div>)}</div></section></div></section>;
+  return <section className="agent-hub-page"><header className="hub-header"><div><h1>Agent Hub</h1><p>发现并使用企业级专业智能体</p></div><button className="primary-small">＋ 创建智能体</button></header><div className="hub-tools"><div className="filter-tabs">{["全部","行业助手","企业管理","数据分析","内容创作"].map((x,i)=><button className={i===0?"active":""} key={x}>{x}</button>)}</div><label><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="搜索智能体"/></label></div><div className="hub-summary"><strong>{source}</strong><span>{filtered.length} 个可用智能体</span></div><div className="hub-grid">{filtered.map(a=><button className="hub-card" onClick={()=>setSelected(a)} key={a.id}><span className="agent-glyph">{a.icon}</span><div className="hub-card-body"><small className="card-provider">{a.type === "平台智能体" ? "平台提供" : a.type}</small><h3>{a.name}</h3><p>{a.description}</p><footer><span>{a.category}</span><small><i />{a.uses} 人使用</small></footer></div><b className="card-arrow">↗</b></button>)}</div>{filtered.length===0&&<div className="empty">没有找到匹配的智能体</div>}</section>;
+}
+
+function BuildPage({prompt,setPrompt,state,start,reset}:{prompt:string;setPrompt:(v:string)=>void;state:"idle"|"running"|"done";start:()=>void;reset:()=>void}){
+  if(state==="idle") return <section className="home-page dotted"><div className="home-center build-home"><p className="hero-kicker">自然语言开发</p><h1 className="greeting">描述需求，创建你的企业智能体</h1><p className="hero-copy">AI 将自动完成角色、知识库与工具配置，并生成可继续编辑的结果。</p><form className="prompt-box build-prompt" onSubmit={e=>{e.preventDefault();start();}}><textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="例如：帮我创建一个销售数据分析助手"/><div className="prompt-tools"><div><button type="button" className="upload-action">＋ 添加资料</button><select><option>创建智能体</option><option>创建技能</option><option>创建应用</option></select><select><option>企业工作区</option></select><select><option>通用企业模型</option></select></div><button className="blue-send" disabled={!prompt.trim()}>↑</button></div></form><div className="prompt-chips">{["创建销售数据分析助手","创建合同风险审查助手","生成项目周报应用"].map(x=><button onClick={()=>setPrompt(x)} key={x}>{x}</button>)}</div></div></section>;
+  return <section className="build-workbench"><div className="build-process"><header className="page-bar"><div><strong>销售分析助手的自然语言创建</strong><small>{state==="running"?"正在生成":"构建完成"}</small></div><button onClick={reset}>重新创建</button></header><div className="process-copy"><p>我已理解你的需求，将创建一个面向企业销售数据的分析助手。</p>{["分析需求与任务边界","创建智能体角色与指令","连接企业知识与数据工具","生成并检查智能体产物"].map((x,i)=><div className={`process-row ${state==="done"||i<3?"complete":"running"}`} key={x}><span>{state==="done"||i<3?"✓":"·"}</span><strong>{x}</strong><small>{i===0?"识别销售分析、报表和经营建议场景":i===1?"角色、职责与输出规范已生成":i===2?"企业知识库与数据工具已连接":"正在生成最终产物"}</small><b>›</b></div>)}</div><div className="generated-items"><article><span>▤</span><div><strong>销售分析助手</strong><small>企业智能体</small></div><b>›</b></article><article><span>▤</span><div><strong>销售经营分析技能</strong><small>技能</small></div><b>›</b></article></div><form className="mini-composer"><input placeholder="有描述或开发任务…"/><button>↑</button></form></div><div className="artifact-panel"><header><div><strong>智能体产物</strong><small>已保存</small></div><div><button>试玩</button><button className="primary-small">提交</button></div></header><div className="artifact-tabs"><button className="active">预览</button><button>检查</button></div><div className="artifact-body"><div className="artifact-title"><span className="agent-glyph">销</span><div><h2>AI 销售分析助手</h2><p>ai-sales-analysis-agent</p></div></div><section><h3>智能体说明</h3><p>面向企业销售数据的智能分析与经营建议，支持按客户、销售组织、时间范围等条件查询并生成报告。</p></section><section><h3>关联工具</h3><div className="tool-grid">{["销售订单查询","销售趋势分析","经营报告生成"].map(x=><div key={x}><span>⌘</span><strong>{x}</strong><small>MCP</small></div>)}</div></section><section><h3>基本信息</h3><p className="info-line">开发者：澄明 AI　 ·　 连接企业知识库　 ·　 已通过安全检查</p></section><section><h3>更新日志</h3><p className="log-line"><b>1.0.0</b>　2026-07-15<br/>初始版本：支持销售数据查询、趋势分析和经营报告生成。</p></section></div></div></section>;
 }
