@@ -20,7 +20,7 @@ const devItems = [
 export function AppSidebar({ mode, drawer, switchMode, source, setSource }: AppSidebarProps) {
   return (
     <aside className={`work-sidebar ${drawer ? "open" : ""}`}>
-      <div className="side-brand"><span>澄</span><strong>澄明 AI</strong><button aria-label="折叠侧栏">◧</button></div>
+      <div className="side-brand"><span>企</span><strong>企业智能体平台</strong><button aria-label="折叠侧栏">◧</button></div>
       <nav className="mode-nav" aria-label="产品模式">
         <button className={mode === "chat" ? "active" : ""} onClick={() => switchMode("chat")}><span>◯</span>对话</button>
         <button className={mode === "agents" ? "active" : ""} onClick={() => switchMode("agents")}><span>⌘</span>Agent</button>
