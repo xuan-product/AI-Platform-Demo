@@ -1,6 +1,8 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react";
+import { AppSidebar } from "./AppSidebar";
+import { BuildAppPage } from "./BuildAppPage";
 
 type Mode = "chat" | "agents" | "build";
 type Agent = { id:number; name:string; icon:string; type:string; category:string; description:string; uses:string };
@@ -38,13 +40,13 @@ export function AgentPlatform() {
 
   return <div className="desktop-app">
     <button className="mobile-menu" onClick={()=>setDrawer(true)} aria-label="打开导航">☰</button>
-    <Sidebar mode={mode} drawer={drawer} switchMode={switchMode} source={source} setSource={(v)=>{setSource(v);setSelected(null);}} buildState={buildState} />
+    <AppSidebar mode={mode} drawer={drawer} switchMode={switchMode} source={source} setSource={(v)=>{setSource(v);setSelected(null);}} />
     {drawer && <button className="drawer-scrim" onClick={()=>setDrawer(false)} aria-label="关闭导航" />}
 
     <main className="workspace">
       {mode === "chat" && <ChatPage chat={chat} setChat={setChat} submitChat={submitChat} message={message} setMessage={setMessage} file={file} fileInput={fileInput} onFile={onFile} />}
       {mode === "agents" && <AgentPage source={source} search={search} setSearch={setSearch} filtered={filtered} selected={selected} setSelected={setSelected} useAgent={(agent)=>{setChat(`使用${agent.name}开始一项新任务`);switchMode("chat");}} />}
-      {mode === "build" && <BuildPage prompt={buildPrompt} setPrompt={(v)=>{setBuildPrompt(v);setBuildState("idle");}} state={buildState} start={startBuild} reset={()=>{setBuildState("idle");setBuildPrompt("");}} />}
+      {mode === "build" && <BuildAppPage prompt={buildPrompt} setPrompt={(v)=>{setBuildPrompt(v);setBuildState("idle");}} state={buildState} start={startBuild} reset={()=>{setBuildState("idle");setBuildPrompt("");}} />}
     </main>
   </div>;
 }
