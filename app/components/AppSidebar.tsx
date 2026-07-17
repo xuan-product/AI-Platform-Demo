@@ -13,7 +13,17 @@ const agentSources = ["平台智能体", "第三方智能体", "租户智能体"
 export function AppSidebar({ mode, drawer, switchMode, source, setSource }: AppSidebarProps) {
   return (
     <aside className={`work-sidebar ${drawer ? "open" : ""}`}>
-      <div className="side-brand"><span>企</span><strong>企业智能体平台</strong><button aria-label="折叠侧栏">◧</button></div>
+      <div className="side-brand">
+        <span className="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M6.5 8.2 12 4.8l5.5 3.4v7.6L12 19.2l-5.5-3.4V8.2Z" />
+            <circle cx="12" cy="9.1" r="1.7" />
+            <path d="M8.8 15.2c.7-1.7 1.8-2.5 3.2-2.5s2.5.8 3.2 2.5" />
+          </svg>
+        </span>
+        <strong>企业智能体平台</strong>
+        <button aria-label="折叠侧栏">◧</button>
+      </div>
       <nav className="mode-nav" aria-label="产品模式">
         <button className={mode === "chat" ? "active" : ""} onClick={() => switchMode("chat")}><span>◯</span>对话</button>
         <button className={mode === "agents" ? "active" : ""} onClick={() => switchMode("agents")}><span>⌘</span>Agent</button>
